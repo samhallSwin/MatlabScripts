@@ -1,0 +1,101 @@
+clear;
+startTime = datetime(2023,7,11,16,40,0);              
+stopTime = startTime + hours(18);                       
+sampleTime = 120;                                      % seconds
+TargetSat = 3;  
+sc = satelliteScenario(startTime,stopTime,sampleTime);
+satelliteScenarioViewer(sc);
+
+%tleFile = "leoSatelliteConstellation.tle"; 
+tleFile = 'threeSatelliteConstellationE.tle';
+
+sat = satellite(sc,tleFile);
+
+for i = 1:length(sat)
+    gimbalSatRx(i) =  gimbal(sat(i),"MountingLocation",[0;-1;2]);
+    gimbalSatTx(i) = gimbal(sat(i), "MountingLocation",[0;1;2]);  % meters
+    satRx(i) = receiver(gimbalSatRx(i), ...
+    "MountingLocation",[0;0;1], ...      % meters
+    "GainToNoiseTemperatureRatio",3, ... % decibels/Kelvin
+    "RequiredEbNo",4);                   % decibels
+    gaussianAntenna(satRx(i), ...
+    "DishDiameter",0.5);    % meters
+    satTx(i) = transmitter(gimbalSatTx(i), ...
+    "MountingLocation",[0;0;1], ...   % meters
+    "Frequency",30e9, ...             % hertz
+    "Power",15);                      % decibel watts
+    gaussianAntenna(satTx(i), ...
+    "DishDiameter",0.5);    % meters
+end
+
+
+latitude = -33.7974039;        % degrees
+longitude = 151.1768208;       % degrees
+gs1 = groundStation(sc, ...
+    latitude, ...
+    longitude, ...
+    "Name","Ground Station");
+
+gimbalGs1 = gimbal(gs1, ...
+    "MountingAngles",[0;180;0], ... % degrees
+    "MountingLocation",[0;0;-5]);   % meters
+
+gs1Tx = transmitter(gimbalGs1, ...
+    "Name","Ground Station 1 Transmitter", ...
+    "MountingLocation",[0;0;1], ...           % meters
+    "Frequency",2.1e9, ...                     % hertz
+    "Power",36);                              % decibel watts
+
+gaussianAntenna(gs1Tx, ...
+    "DishDiameter",2.4); % meters
+
+%     ac = access(sat(1),gs1);
+%     intvls = accessIntervals(ac)
+
+totalNodes = length(sat)+1;
+satAcc= zeros(totalNodes);
+
+totalTime = seconds(stopTime - startTime)/sampleTime;
+time = startTime;
+
+connectArray(1:totalTime) = 0;
+
+satAccTime(1:4,1:4,1:totalTime) = 0;
+
+%GS to each sat connections 
+acObj = access(gs1, sat(1:end));
+ac_matrix(:,:,1) = acObj;
+
+%Sat to Sat connections
+for i = 1:length(sat)
+    acObj = access(sat(i),sat(1:end));
+    ac_matrix(:,:,i+1) = acObj;
+end
+
+for timeInc = 1:totalTime
+    
+    %For each timeInc, get adjacency vector for GS to Sats
+    satAcc(1, 2:end) = accessStatus(ac_matrix(:,:,1), time);
+    %adjacency Matrix is diagonally symetical 
+    satAcc(2:end, 1) = satAcc(1, 2:end);
+
+    %Build matrix with inter-sat connections
+    for i = 2:length(totalNodes)
+        satAcc(2:end, i) = accessStatus(ac_matrix(:,:,i, time));
+    end    
+
+    %Build graph to check connections from Matrix
+    G = graph(satAcc);
+    comp = conncomp(G);
+  
+    %Check if path exists between GS and target
+    if comp(1) == comp(TargetSat+1)
+        connectArray(timeInc) = 1;
+    end
+
+    time = time + seconds(sampleTime)
+end
+
+figure
+heatmap(connectArray);
+
