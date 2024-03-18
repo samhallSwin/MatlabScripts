@@ -1,13 +1,21 @@
 clear;
-startTime = datetime(2023,7,11,16,40,0);              
-stopTime = startTime + hours(18);                       
-sampleTime = 120;                                      % seconds
-TargetSat = 3;  
+startTime = datetime(2023,7,10,22,00,0);              
+stopTime = startTime + hours(6)%minutes(101);                       
+sampleTime = 60;                                      % seconds
+TargetSat = 1;  
 sc = satelliteScenario(startTime,stopTime,sampleTime);
+
+%Comment this out to increase compute speed
 satelliteScenarioViewer(sc);
 
-%tleFile = "leoSatelliteConstellation.tle"; 
-tleFile = 'threeSatelliteConstellationE.tle';
+%Uncomment the desired tle file
+%tleFile = "leoSatelliteConstellation.tle";
+%tleFile = "leoSatelliteConstellation1.tle"; 
+%tleFile = "leoSatelliteConstellation4.tle";
+%tleFile = "leoSatelliteConstellation8.tle";
+%tleFile = 'threeSatelliteConstellationE.tle';
+%tleFile = 'Walker.tle';
+tleFile = 'NovaSar.tle';
 
 sat = satellite(sc,tleFile);
 
@@ -52,6 +60,10 @@ gaussianAntenna(gs1Tx, ...
 %     ac = access(sat(1),gs1);
 %     intvls = accessIntervals(ac)
 
+for i = 1:length(sat)
+    satPeriods(i)=orbitalElements(sat(i)).Period;
+end
+
 totalNodes = length(sat)+1;
 satAcc= zeros(totalNodes);
 
@@ -81,6 +93,7 @@ for timeInc = 1:totalTime
 
     %Build matrix with inter-sat connections
     for i = 2:length(totalNodes)
+
         satAcc(2:end, i) = accessStatus(ac_matrix(:,:,i, time));
     end    
 
@@ -92,8 +105,9 @@ for timeInc = 1:totalTime
     if comp(1) == comp(TargetSat+1)
         connectArray(timeInc) = 1;
     end
-
-    time = time + seconds(sampleTime)
+    timeArray(timeInc) = time;
+    time = time + seconds(sampleTime);
+   
 end
 
 figure

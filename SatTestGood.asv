@@ -2,12 +2,17 @@ clear;
 startTime = datetime(2023,7,11,16,40,0);              
 stopTime = startTime + hours(18);                       
 sampleTime = 120;                                      % seconds
-TargetSat = 3;  
+TargetSat = 1;  
 sc = satelliteScenario(startTime,stopTime,sampleTime);
+
+%Comment this out to increase compute speed
 satelliteScenarioViewer(sc);
 
-%tleFile = "leoSatelliteConstellation.tle"; 
-tleFile = 'threeSatelliteConstellationE.tle';
+%Uncomment the desired tle file
+%tleFile = "leoSatelliteConstellation.tle";
+tleFile = "leoSatelliteConstellation1.tle"; 
+%tleFile = 'threeSatelliteConstellationE.tle';
+%tleFile = 'Walker.tle';
 
 sat = satellite(sc,tleFile);
 
@@ -88,112 +93,14 @@ for timeInc = 1:totalTime
     G = graph(satAcc);
     comp = conncomp(G);
   
-
-    if comp(1) == comp(3)
+    %Check if path exists between GS and target
+    if comp(1) == comp(TargetSat+1)
         connectArray(timeInc) = 1;
     end
 
-    %satAccTime(:,:,timeInc) = satAcc;
     time = time + seconds(sampleTime)
 end
 
 figure
 heatmap(connectArray);
 
-% G = graph(satAcc);
-figure
-plot(G)
-
-%eventTable2Chart(intvls,startTime, stopTime, sampleTime)
-
-
-%s = accessStatus(ac,time)
-
-% pointAt(gimbalGs1,sat1);
-% pointAt(gimbalSat1Rx,gs1);
-% 
-% lnk(1) = link(gs1Tx,sat1Rx);
-% linkIntervals(lnk(1))
-% 
-% figure
-% [e, time] = ebno(lnk(1));
-% margin(1,:) = e - sat1Rx.RequiredEbNo;
-% plot(time,margin,"LineWidth",2);
-% xlabel("Time");
-% ylabel("Link Margin (dB)");
-% grid on;
-% 
-% pointAt(gimbalGs1,sat2);
-% pointAt(gimbalSat2Rx,gs1);
-% pointAt(gimbalSat2Tx,sat1);
-% pointAt(gimbalSat1Rx,sat2);
-% 
-% lnk(2) = link(gs1Tx,sat2Rx, sat2Tx, sat1Rx);
-% linkIntervals(lnk(2))
-% 
-% [e, time] = ebno(lnk(2));
-% margin(2,:) = e - sat2Rx.RequiredEbNo;
-% 
-% 
-% 
-% pointAt(gimbalGs1,sat3);
-% pointAt(gimbalSat3Rx,gs1);
-% pointAt(gimbalSat3Tx,sat1);
-% pointAt(gimbalSat1Rx,sat3);
-% 
-% lnk(3) = link(gs1Tx,sat3Rx, sat3Tx, sat1Rx);
-% %lnk(3) = link(sat3Tx, sat1Rx);
-% linkIntervals(lnk(3))
-% 
-% [e, time] = ebno(lnk(3));
-% margin(3,:) = e - sat3Rx.RequiredEbNo;
-% 
-% pointAt(gimbalGs1,sat3);
-% pointAt(gimbalSat3Rx,gs1);
-% pointAt(gimbalSat3Tx,sat2);
-% pointAt(gimbalSat2Rx,sat3);
-% pointAt(gimbalSat2Tx,sat1);
-% pointAt(gimbalSat1Rx,sat2);
-% 
-% lnk(4) = link(gs1Tx,sat3Rx, sat3Tx, sat2Rx, sat2Tx, sat1Rx);
-% linkIntervals(lnk(4))
-% 
-% [e, time] = ebno(lnk(4));
-% margin(4,:) = e - sat1Rx.RequiredEbNo;
-% 
-% pointAt(gimbalGs1,sat2);
-% pointAt(gimbalSat2Rx,gs1);
-% pointAt(gimbalSat2Tx,sat3);
-% pointAt(gimbalSat3Rx,sat2);
-% pointAt(gimbalSat3Tx,sat1);
-% pointAt(gimbalSat1Rx,sat3);
-% 
-% lnk(5) = link(gs1Tx,sat2Rx, sat2Tx, sat3Rx, sat3Tx, sat1Rx);
-% linkIntervals(lnk(5))
-% 
-% [e, time] = ebno(lnk(5));
-% margin(5,:) = e - sat1Rx.RequiredEbNo;
-% 
-% figure
-% subplot(1,2,1);
-% plot(time,margin,"LineWidth",2);
-% xlabel("Time");
-% ylabel("Link Margin (dB)");
-% grid on;
-% legend({'Direct to Sat1','via Sat2','via Sat3', 'via Sat3 then sat2','via Sat2 then sat3'})
-% 
-% %margin(margin < -10e6) = 0;
-% 
-% marginSumInt1 = max(margin(1,:),margin(2,:));
-% marginSumInt2 = max(marginSumInt1,margin(3,:));
-% marginSumInt3 = max(marginSumInt2,margin(4,:));
-% marginSum = max(marginSumInt3,margin(5,:));
-% %eSum = e(1) + e(2) + e(3) + e(4) + e(5);
-% % %lnk = lnk1 + lnk2 + lnk3 + lnk4 + lnk5;
-% % 
-% marginSum(marginSum <= 0) = -inf;
-% subplot(1,2,2);
-% plot(time,marginSum,"LineWidth",2);
-% xlabel("Time");
-% ylabel("Link Margin (dB)");
-% grid on;

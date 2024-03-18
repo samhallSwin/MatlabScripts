@@ -1,5 +1,5 @@
 clear;
-startTime = datetime(2023,7,11,6,0,0);              % 19 August 2020 8:55 PM UTC
+startTime = datetime(2023,7,10,22,0,0);              % 19 August 2020 8:55 PM UTC
 stopTime = startTime + hours(6);                       % 20 August 2020 8:55 PM UTC
 sampleTime = 1;                                      % seconds
 sc = satelliteScenario(startTime,stopTime,sampleTime);

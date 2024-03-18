@@ -1,16 +1,19 @@
 clear;
-startTime = datetime(2023,7,11,6,0,0);              % 19 August 2020 8:55 PM UTC
-stopTime = startTime + hours(12);                       % 20 August 2020 8:55 PM UTC
+startTime = datetime(2023,7,11,16,30,0);              % 19 August 2020 8:55 PM UTC
+stopTime = startTime + hours(2);                       % 20 August 2020 8:55 PM UTC
 sampleTime = 600;                                      % seconds
 sc = satelliteScenario(startTime,stopTime,sampleTime);
+targetSat =2;
 satelliteScenarioViewer(sc);
 
-tleFile = 'leoSatelliteConstellation8.tle';%"leoSatelliteConstellation.tle";
-satt = satellite(sc,tleFile);
-sat(1) = satt(1);
-sat(2) = satt(2);
-sat(3) = satt(3);
-sat(4) = satt(4);
+%tleFile = "leoSatelliteConstellation.tle";
+%tleFile = "leoSatelliteConstellation1.tle"; 
+tleFile = "leoSatelliteConstellation4.tle";
+%tleFile = "leoSatelliteConstellation8.tle";
+%tleFile = 'threeSatelliteConstellationE.tle';
+%tleFile = 'Walker.tle';
+
+sat = satellite(sc,tleFile);
 
 for i = 1:length(sat)
     gimbalSatRx(i) =  gimbal(sat(i),"MountingLocation",[0;-1;2]);
@@ -50,19 +53,26 @@ gs1Tx = transmitter(gimbalGs1, ...
 gaussianAntenna(gs1Tx, ...
     "DishDiameter",2.4); % meters
 
-%     ac = access(sat(1),gs1);
-%     intvls = accessIntervals(ac)
+    ac = access(sat(1),gs1);
+    intvls = accessIntervals(ac)
 
 totalNodes = length(sat)+1;
 satAcc(totalNodes,totalNodes) = 0;
 
 
-totalTime = seconds(stopTime - startTime)/sampleTime;
+totalTime = round(seconds(stopTime - startTime)/sampleTime);
 time = startTime;
 
 connectArray(1:totalTime) = 0;
 
 satAccTime(1:4,1:4,1:totalTime) = 0;
+
+%Create name vector for populating Graphs
+NodesName(1) = {'gs'};
+for numsats = 1: length(sat)
+    str = ['sat' num2str(numsats)];
+    NodesName(numsats+1) = {str};
+end
 
 for timeInc = 1:totalTime
 
@@ -72,7 +82,7 @@ for timeInc = 1:totalTime
         satAcc(1,j) = accessStatus(ac,time);
         satAcc(j,1) = satAcc(1,j);
     end
-    
+
     %adj matrix between sats
     for i = 2:totalNodes
         for j = 2:totalNodes
@@ -86,10 +96,12 @@ for timeInc = 1:totalTime
         end
     end
 
-    G = graph(satAcc);
-    comp = conncomp(G);
+    G= graph(satAcc,NodesName);
 
-    if comp(1) == comp(3)
+    comp = conncomp(G);
+    Garray{timeInc} = G;
+    compArray(:,timeInc)=comp;
+    if comp(1) == comp(targetSat)
         connectArray(timeInc) = 1;
     end
 
@@ -105,8 +117,8 @@ heatmap(connectArray);
 %eventTable2Chart(intvls,startTime, stopTime, sampleTime)
 
 
-%s = accessStatus(ac,time)
-
+% s = accessStatus(ac,time)
+% 
 % pointAt(gimbalGs1,sat1);
 % pointAt(gimbalSat1Rx,gs1);
 % 
